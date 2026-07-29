@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda do Fut - Gestão de Jogadores</title>
+    <!-- Biblioteca para transformar a lista em imagem -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2c3e50, #1a252f);
+            color: #ecf0f1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            position: relative;
+        }
+        .adm-btn-top {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #4b6584;
+            color: #bdc3c7;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        .adm-btn-top:hover {
+            background: #f1c40f;
+            color: #1a252f;
+            border-color: #f1c40f;
+        }
+        .adm-ativo-indicator {
+            background: #e67e22 !important;
+            color: #fff !important;
+            border-color: #d35400 !important;
+        }
+        .form-container {
+            background: linear-gradient(145deg, #34495e, #2c3e50);
+            padding: 35px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+            width: 100%;
+            max-width: 420px;
+            border: 1px solid #4e6d8c;
+            transition: filter 0.3s;
+        }
+        .blur-bg {
+            filter: blur(5px);
+            pointer-events: none;
+        }
+        h2 {
+            margin-bottom: 25px;
+            color: #f1c40f;
+            text-align: center;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .counter-info {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 15px;
+            color: #2ecc71;
+            border: 1px solid #4b6584;
+            font-weight: bold;
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #bdc3c7;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            background-color: #1e272e;
+            border: 1px solid #4b6584;
+            border-radius: 6px;
+            color: #fff;
+            font-size: 16px;
+            outline: none;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        input:focus {
+            border-color: #f1c40f;
+            box-shadow: 0 0 8px rgba(241, 196, 15, 0.4);
+        }
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        button.action-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #27ae60, #219653);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s, transform 0.1s;
+            box-shadow: 0 4px 10px rgba(39, 174, 96, 0.4);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        button.action-btn:hover {
+            background: linear-gradient(135deg, #2ecc71, #27ae60);
+        }
+        button.secondary-btn {
+            background: linear-gradient(135deg, #2980b9, #1f618d);
+            box-shadow: 0 4px 10px rgba(41, 128, 185, 0.4);
+        }
+        button.secondary-btn:hover {
+            background: linear-gradient(135deg, #3498db, #2980b9);
+        }
+        button.danger-btn {
+            background: linear-gradient(135deg, #c0392b, #962d22);
+            box-shadow: 0 4px 10px rgba(192, 57, 43, 0.4);
+            margin-top: 10px;
+            font-size: 14px;
+            padding: 10px;
+        }
+        button.danger-btn:hover {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+        }
+        button:active {
+            transform: scale(0.98);
+        }
+        button:disabled {
+            background: #7f8c8d;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        #status {
+            margin-top: 15px;
+            text-align: center;
+            font-size: 13px;
+            font-weight: bold;
+            padding: 0 10px;
+        }
+
+        /* Modais (Listagem e ADM) */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            display: none;
+        }
+        .modal-box {
+            background: #2c3e50;
+            padding: 25px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            border: 1px solid #4e6d8c;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .modal-header h3 {
+            margin: 0;
+            color: #f1c40f;
+            font-size: 18px;
+        }
+        .close-modal {
+            background: none;
+            border: none;
+            color: #e74c3c;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .lista-container {
+            overflow-y: auto;
+            flex-grow: 1;
+            margin-bottom: 15px;
+            background: #1e272e;
+            border-radius: 6px;
+            padding: 10px;
+            border: 1px solid #4b6584;
+        }
+        .jogador-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 14px;
+        }
+        .jogador-item:last-child {
+            border-bottom: none;
+        }
+        .btn-remover-adm {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .btn-remover-adm:hover {
+            background: #c0392b;
+        }
+        .btn-confirmar-adm {
+            background: #2ecc71;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 11px;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        .btn-confirmar-adm:hover {
+            background: #27ae60;
+        }
+        .badge {
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: bold;
+            margin-left: 6px;
+            text-transform: uppercase;
+        }
+        .badge-confirmado {
+            background-color: rgba(46, 204, 113, 0.2);
+            color: #2ecc71;
+            border: 1px solid #2ecc71;
+        }
+        .badge-pendente {
+            background-color: rgba(243, 156, 18, 0.2);
+            color: #f39c12;
+            border: 1px solid #f39c12;
+        }
+
+        /* Caixas de confirmação embutidas no site */
+        .confirm-box {
+            background: #1e272e;
+            border: 1px solid #e74c3c;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            text-align: center;
+            display: none;
+        }
+        .confirm-box p {
+            margin: 0 0 10px 0;
+            font-size: 13px;
+            color: #e74c3c;
+            font-weight: bold;
+        }
+        .confirm-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .confirm-buttons button {
+            flex: 1;
+            padding: 6px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+
+    <button class="adm-btn-top" id="admBtnTop" onclick="abrirPainelAdm()">Modo ADM</button>
+
+    <div class="form-container" id="mainContainer">
+        <h2>AGENDA DO FUT⚽</h2>
+        <div class="counter-info" id="counterInfo">Carregando vagas...</div>
+        
+        <form id="sheetForm">
+            <div class="input-group">
+                <label for="nome">Seu Nome:</label>
+                <input type="text" id="nome" name="nome" placeholder="Ex: Hélio" required>
+            </div>
+            
+            <div class="btn-group">
+                <button type="submit" id="btnSubmit" class="action-btn">Agendar Vaga</button>
+                <button type="button" class="action-btn secondary-btn" onclick="abrirModalLista()">Visualizar Lista</button>
+            </div>
+        </form>
+        <div id="status"></div>
+    </div>
+
+    <!-- Modal de Visualização da Lista -->
+    <div class="modal-overlay" id="modalLista">
+        <div class="modal-box" id="printArea">
+            <div class="modal-header">
+                <h3>Lista Oficial - Fut⚽</h3>
+                <button class="close-modal" onclick="fecharModalLista()">×</button>
+            </div>
+            <div class="counter-info" id="modalCounter" style="margin-bottom: 10px; font-size: 13px; padding: 8px;">Carregando...</div>
+            
+            <!-- Caixa de Confirmação embutida para limpar tudo -->
+            <div class="confirm-box" id="confirmLimparBox">
+                <p>Tem certeza que deseja apagar toda a lista?</p>
+                <div class="confirm-buttons">
+                    <button class="action-btn" style="background: #e74c3c;" onclick="executarLimparTudo()">Sim</button>
+                    <button class="action-btn secondary-btn" onclick="esconderConfirmacaoLimpar()">Não</button>
+                </div>
+            </div>
+
+            <!-- Caixa de Confirmação embutida para remover jogador individual -->
+            <div class="confirm-box" id="confirmRemoverIndivBox">
+                <p id="textoConfirmRemover">Tem certeza que deseja remover este jogador?</p>
+                <div class="confirm-buttons">
+                    <button class="action-btn" style="background: #e74c3c;" onclick="executarRemoverJogador()">Sim</button>
+                    <button class="action-btn secondary-btn" onclick="esconderConfirmacaoRemoverIndiv()">Não</button>
+                </div>
+            </div>
+
+            <div class="lista-container" id="listaJogadoresHtml">
+                <!-- Preenchido via JS -->
+            </div>
+            <button type="button" class="action-btn secondary-btn" id="btnBaixarImg" onclick="baixarImagemLista()" style="font-size: 14px; padding: 10px; margin-bottom: 5px;">Baixar Imagem da Lista</button>
+            
+            <!-- Botão Limpar Tudo (Visível apenas para ADM) -->
+            <button type="button" class="action-btn danger-btn" id="btnLimparTudo" style="display: none;" onclick="mostrarConfirmacaoLimpar()">Apagar Toda a Lista</button>
+        </div>
+    </div>
+
+    <!-- Modal de Login/Gerenciamento ADM -->
+    <div class="modal-overlay" id="modalAdm">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 id="tituloModalAdm">Painel Administrativo</h3>
+                <button class="close-modal" onclick="fecharModalAdm()">×</button>
+            </div>
+            
+            <!-- Conteúdo de Login -->
+            <div id="divLoginAdm">
+                <div class="input-group" style="margin-top: 10px;">
+                    <label for="senhaAdm">Código de Acesso:</label>
+                    <input type="password" id="senhaAdm" placeholder="Digite a senha...">
+                </div>
+                <button type="button" class="action-btn" onclick="validarAdm()">Entrar como ADM</button>
+                <div id="statusAdm" style="margin-top: 10px; text-align: center; font-size: 13px;"></div>
+            </div>
+
+            <!-- Conteúdo de ADM Ativo (Sair do Modo ADM) -->
+            <div id="divSairAdm" style="display: none; text-align: center;">
+                <p style="color: #2ecc71; font-weight: bold; margin-bottom: 20px;">Modo ADM está ativo no momento.</p>
+                <button type="button" class="action-btn" style="background: #e74c3c;" onclick="mostrarConfirmacaoSairAdm()">Sair do Modo ADM</button>
+            </div>
+
+            <!-- Caixa de Confirmação embutida para Sair do Modo ADM -->
+            <div class="confirm-box" id="confirmSairAdmBox" style="margin-top: 15px;">
+                <p>Tem certeza que deseja sair do Modo ADM?</p>
+                <div class="confirm-buttons">
+                    <button class="action-btn" style="background: #e74c3c;" onclick="executarSairAdm()">Sim</button>
+                    <button class="action-btn secondary-btn" onclick="esconderConfirmacaoSairAdm()">Não</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // NOVA URL ATUALIZADA AQUI
+        const scriptURL = 'https://script.google.com/macros/s/AKfycbzK0KmXqVbYuU48UIu1Dz6vv3-G0lJbkdMgtxDiuVHf6cN4zGGUzbmInZXM3vSu6am_/exec';
+        
+        let dadosGlobais = { total: 0, jogadores: [] };
+        let modoAdmAtivo = false;
+        let senhaAtualAdm = '';
+        let linhaParaRemover = null;
+
+        const form = document.getElementById('sheetForm');
+        const statusDiv = document.getElementById('status');
+        const btnSubmit = document.getElementById('btnSubmit');
+        const counterInfo = document.getElementById('counterInfo');
+        const modalLista = document.getElementById('modalLista');
+        const modalAdm = document.getElementById('modalAdm');
+        const mainContainer = document.getElementById('mainContainer');
+        const admBtnTop = document.getElementById('admBtnTop');
+
+        function buscarDadosDaPlanilha() {
+            fetch(scriptURL + '?acao=listar')
+                .then(response => response.json())
+                .then(data => {
+                    dadosGlobais = data; // dadosGlobais.total agora é apenas os Confirmados!
+                    atualizarInterfaceVagas();
+                })
+                .catch(error => {
+                    console.error('Erro ao buscar dados:', error);
+                    counterInfo.textContent = 'Erro ao carregar vagas';
+                });
+        }
+
+        function atualizarInterfaceVagas() {
+            const vagasPreenchidas = dadosGlobais.total || 0;
+            const vagasRestantes = Math.max(0, 10 - vagasPreenchidas);
+            
+            if (vagasRestantes > 0) {
+                counterInfo.textContent = `Existem ${vagasRestantes} vagas disponíveis!`;
+                counterInfo.style.color = '#2ecc71';
+                btnSubmit.disabled = false;
+                btnSubmit.textContent = 'Agendar Vaga';
+            } else {
+                counterInfo.textContent = 'As 10 vagas oficiais foram preenchidas!';
+                counterInfo.style.color = '#e74c3c';
+                btnSubmit.disabled = true;
+                btnSubmit.textContent = 'Vagas Esgotadas';
+            }
+        }
+
+        // Carrega dados ao abrir
+        buscarDadosDaPlanilha();
+
+        // Envio do formulário de agendamento
+        form.addEventListener('submit', e => {
+            e.preventDefault();
+            
+            const nomeDigitado = document.getElementById('nome').value.trim();
+            
+            // Lista dos VIPS (pagaram a bola)
+            const nomesPermitidos = ["helio", "oscar", "aquiles", "tica", "clebinho", "alex", "matheus", "saymo", "gilberto", "joaquim", "talita"];
+            const nomeNormalizado = nomeDigitado.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+            // Define o status e a mensagem baseado no pagamento
+            let statusJogador = 'Pendente';
+            let msgSucessoFinal = 'VAGA AGENDADA NA LISTA DE PENDENTES! LOGO UM ADM IRÁ CONFIRMÁ-LA.';
+            let corSucessoFinal = '#f39c12'; // Laranja para pendente
+
+            if (nomesPermitidos.includes(nomeNormalizado)) {
+                statusJogador = 'Confirmado';
+                msgSucessoFinal = 'Vaga agendada com sucesso!';
+                corSucessoFinal = '#2ecc71'; // Verde para confirmado
+            }
+
+            btnSubmit.disabled = true;
+            btnSubmit.textContent = 'Enviando...';
+            statusDiv.style.color = '#f1c40f';
+            statusDiv.textContent = 'Salvando dados na planilha...';
+
+            const requestData = {
+                nome: nomeDigitado,
+                status: statusJogador // Envia o status para a planilha
+            };
+
+            fetch(scriptURL, {
+                method: 'POST',
+                body: JSON.stringify(requestData)
+            })
+            .then(res => res.json())
+            .then(resposta => {
+                if(resposta.sucesso) {
+                    statusDiv.style.color = corSucessoFinal;
+                    statusDiv.textContent = msgSucessoFinal;
+                    form.reset();
+                    buscarDadosDaPlanilha();
+                } else {
+                    statusDiv.style.color = '#e74c3c';
+                    statusDiv.textContent = resposta.erro || 'Erro ao agendar.';
+                    btnSubmit.disabled = false;
+                    btnSubmit.textContent = 'Agendar Vaga';
+                }
+            })
+            .catch(error => {
+                statusDiv.style.color = '#e74c3c';
+                statusDiv.textContent = 'Erro de conexão.';
+                console.error('Erro!', error.message);
+                btnSubmit.disabled = false;
+                btnSubmit.textContent = 'Agendar Vaga';
+            });
+        });
+
+        // Funções do Modal de Lista
+        function abrirModalLista() {
+            const containerHtml = document.getElementById('listaJogadoresHtml');
+            const modalCounter = document.getElementById('modalCounter');
+            const btnLimparTudo = document.getElementById('btnLimparTudo');
+            containerHtml.innerHTML = '';
+            
+            const vagasRestantesModal = Math.max(0, 10 - (dadosGlobais.total || 0));
+            // Trocado "preenchidas" por "confirmadas"
+            modalCounter.textContent = `Existem ${vagasRestantesModal} vagas disponíveis! (${dadosGlobais.total}/10 confirmadas)`;
+            
+            if (modoAdmAtivo) {
+                btnLimparTudo.style.display = 'block';
+            } else {
+                btnLimparTudo.style.display = 'none';
+                esconderConfirmacaoLimpar();
+            }
+            esconderConfirmacaoRemoverIndiv();
+
+            if(dadosGlobais.jogadores.length === 0) {
+                containerHtml.innerHTML = '<div style="text-align: center; color: #7f8c8d; padding: 20px;">Nenhum jogador na lista ainda.</div>';
+            } else {
+                dadosGlobais.jogadores.forEach((jog, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'jogador-item';
+                    
+                    // Mostra o badge Confirmado ou Pendente
+                    let spanBadge = jog.status === 'Pendente' 
+                        ? `<span class="badge badge-pendente">Pendente</span>`
+                        : `<span class="badge badge-confirmado">Confirmado</span>`;
+
+                    let htmlExtra = `<span>${index + 1}. <strong>${jog.nome}</strong> ${spanBadge}</span>`;
+                    
+                    if (modoAdmAtivo) {
+                        let botoesAdm = `<div style="display: flex; align-items: center;">`;
+                        // Se for Pendente, mostra botão verde de confirmar para o ADM
+                        if (jog.status === 'Pendente') {
+                            botoesAdm += `<button class="btn-confirmar-adm" onclick="confirmarVaga(${jog.linha})">✔ Aceitar</button>`;
+                        }
+                        botoesAdm += `<button class="btn-remover-adm" onclick="mostrarConfirmacaoRemoverIndiv(${jog.linha}, '${jog.nome}')">Remover</button></div>`;
+                        
+                        htmlExtra += botoesAdm;
+                    } else {
+                        htmlExtra += `<span style="font-size: 11px; color: #95a5a6;">${jog.data.slice(0,5)}</span>`;
+                    }
+                    
+                    item.innerHTML = htmlExtra;
+                    containerHtml.appendChild(item);
+                });
+            }
+            
+            modalLista.style.display = 'flex';
+        }
+
+        function fecharModalLista() {
+            modalLista.style.display = 'none';
+            esconderConfirmacaoLimpar();
+            esconderConfirmacaoRemoverIndiv();
+        }
+
+        // Função do ADM para mudar status de Pendente para Confirmado
+        function confirmarVaga(linhaPlanilha) {
+            fetch(`${scriptURL}?acao=confirmar&linha=${linhaPlanilha}&senha=${senhaAtualAdm}`)
+                .then(res => res.json())
+                .then(resposta => {
+                    if (resposta.sucesso) {
+                        buscarDadosDaPlanilha();
+                        setTimeout(abrirModalLista, 300);
+                    } else {
+                        console.error(resposta.erro);
+                    }
+                })
+                .catch(err => console.error(err));
+        }
+
+        // Funções de confirmação embutidas no site para limpar tudo
+        function mostrarConfirmacaoLimpar() {
+            esconderConfirmacaoRemoverIndiv();
+            document.getElementById('confirmLimparBox').style.display = 'block';
+        }
+
+        function esconderConfirmacaoLimpar() {
+            document.getElementById('confirmLimparBox').style.display = 'none';
+        }
+
+        function executarLimparTudo() {
+            esconderConfirmacaoLimpar();
+            fetch(`${scriptURL}?acao=limparTudo&senha=${senhaAtualAdm}`)
+                .then(res => res.json())
+                .then(resposta => {
+                    if (resposta.sucesso) {
+                        buscarDadosDaPlanilha();
+                        setTimeout(abrirModalLista, 300);
+                    } else {
+                        console.error(resposta.erro);
+                    }
+                })
+                .catch(err => console.error(err));
+        }
+
+        // Funções de confirmação embutidas para remoção individual
+        function mostrarConfirmacaoRemoverIndiv(linha, nomeJogador) {
+            esconderConfirmacaoLimpar();
+            linhaParaRemover = linha;
+            document.getElementById('textoConfirmRemover').textContent = `Tem certeza que deseja remover ${nomeJogador}?`;
+            document.getElementById('confirmRemoverIndivBox').style.display = 'block';
+        }
+
+        function esconderConfirmacaoRemoverIndiv() {
+            document.getElementById('confirmRemoverIndivBox').style.display = 'none';
+            linhaParaRemover = null;
+        }
+
+        function executarRemoverJogador() {
+            if (linhaParaRemover === null) return;
+            const linhaPlanilha = linhaParaRemover;
+            esconderConfirmacaoRemoverIndiv();
+
+            fetch(`${scriptURL}?acao=remover&linha=${linhaPlanilha}&senha=${senhaAtualAdm}`)
+                .then(res => res.json())
+                .then(resposta => {
+                    if (resposta.sucesso) {
+                        buscarDadosDaPlanilha();
+                        setTimeout(abrirModalLista, 300);
+                    } else {
+                        console.error(resposta.erro);
+                    }
+                })
+                .catch(err => console.error(err));
+        }
+
+        // Função de baixar imagem usando html2canvas
+        function baixarImagemLista() {
+            const btnBaixar = document.getElementById('btnBaixarImg');
+            const btnLimparTudo = document.getElementById('btnLimparTudo');
+            const botoesAdm = document.querySelectorAll('.btn-remover-adm, .btn-confirmar-adm');
+            
+            btnBaixar.style.display = 'none';
+            if(btnLimparTudo) btnLimparTudo.style.display = 'none';
+            botoesAdm.forEach(btn => btn.style.display = 'none'); // Esconde botões do ADM na foto
+            esconderConfirmacaoLimpar();
+            esconderConfirmacaoRemoverIndiv();
+            
+            const elementoPrint = document.getElementById('printArea');
+            html2canvas(elementoPrint, { backgroundColor: '#2c3e50' }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'lista-futebol.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                
+                btnBaixar.style.display = 'block';
+                if(modoAdmAtivo) {
+                    if(btnLimparTudo) btnLimparTudo.style.display = 'block';
+                    botoesAdm.forEach(btn => btn.style.display = 'inline-block');
+                }
+            });
+        }
+
+        // Funções do Painel ADM
+        function abrirPainelAdm() {
+            mainContainer.classList.add('blur-bg');
+            const divLogin = document.getElementById('divLoginAdm');
+            const divSair = document.getElementById('divSairAdm');
+            const tituloModal = document.getElementById('tituloModalAdm');
+            
+            esconderConfirmacaoSairAdm();
+
+            if (modoAdmAtivo) {
+                tituloModal.textContent = "Gerenciar Modo ADM";
+                divLogin.style.display = 'none';
+                divSair.style.display = 'block';
+            } else {
+                tituloModal.textContent = "Painel Administrativo";
+                divLogin.style.display = 'block';
+                divSair.style.display = 'none';
+            }
+            modalAdm.style.display = 'flex';
+        }
+
+        function fecharModalAdm() {
+            mainContainer.classList.remove('blur-bg');
+            modalAdm.style.display = 'none';
+            document.getElementById('senhaAdm').value = '';
+            document.getElementById('statusAdm').textContent = '';
+            esconderConfirmacaoSairAdm();
+        }
+
+        function validarAdm() {
+            const senha = document.getElementById('senhaAdm').value;
+            const statusAdm = document.getElementById('statusAdm');
+            
+            if (senha === "ADMFFCLELO") {
+                modoAdmAtivo = true;
+                senhaAtualAdm = senha;
+                statusAdm.style.color = '#2ecc71';
+                statusAdm.textContent = 'Acesso liberado! Modo ADM ativo.';
+                
+                admBtnTop.textContent = "ADM Ativo";
+                admBtnTop.classList.add('adm-ativo-indicator');
+
+                setTimeout(() => {
+                    fecharModalAdm(); 
+                }, 800);
+            } else {
+                statusAdm.style.color = '#e74c3c';
+                statusAdm.textContent = 'Senha incorreta!';
+            }
+        }
+
+        function mostrarConfirmacaoSairAdm() {
+            document.getElementById('confirmSairAdmBox').style.display = 'block';
+        }
+
+        function esconderConfirmacaoSairAdm() {
+            document.getElementById('confirmSairAdmBox').style.display = 'none';
+        }
+
+        function executarSairAdm() {
+            esconderConfirmacaoSairAdm();
+            modoAdmAtivo = false;
+            senhaAtualAdm = '';
+            
+            admBtnTop.textContent = "Modo ADM";
+            admBtnTop.classList.remove('adm-ativo-indicator');
+
+            fecharModalAdm();
+        }
+    </script>
+</body>
+</html>
